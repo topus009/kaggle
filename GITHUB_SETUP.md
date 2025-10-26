@@ -15,7 +15,7 @@
 Откройте терминал в папке проекта и выполните:
 
 ```bash
-cd "/home/sergey-topolov/Рабочий стол/captcha_ocr_project"
+cd "/home/sergey-topolov/Рабочий стол/kaggle"
 
 # Добавить удаленный репозиторий (замените YOUR_USERNAME на свой GitHub username)
 git remote add origin https://github.com/YOUR_USERNAME/captcha-ocr-model.git
@@ -84,7 +84,7 @@ git log --oneline  # история коммитов
 
 ## Полезные ссылки
 
-- Проект: `/home/sergey-topolov/Рабочий стол/captcha_ocr_project`
+- Проект: `/home/sergey-topolov/Рабочий стол/kaggle`
 - GitHub репозиторий: `https://github.com/YOUR_USERNAME/captcha-ocr-model`
 
 ## Решение проблем
