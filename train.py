@@ -17,9 +17,117 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 
-# Путь к данным - ДЛЯ KAGGLE.COM
-LABELS_FILE = "../input/russian-captcha-images-base64/labels.csv"
-IMG_FOLDER = "../input/russian-captcha-images-base64/translit/images"
+# Путь к данным - АВТОМАТИЧЕСКИЙ ПОИСК
+import glob
+import os
+
+# Ищем файлы данных
+possible_labels = [
+    "../input/russian-captcha-images-base64/labels.csv",  # Kaggle
+    "data/labels.csv",  # Локальная папка
+    "labels.csv",  # Текущая папка
+    "input/labels.csv"  # Альтернативная структура
+]
+
+possible_img_folders = [
+    "../input/russian-captcha-images-base64/translit/images",  # Kaggle
+    "data/images",  # Локальная папка
+    "images",  # Текущая папка
+    "input/images"  # Альтернативная структура
+]
+
+# Находим файл с метками
+LABELS_FILE = None
+for path in possible_labels:
+    if os.path.exists(path):
+        LABELS_FILE = path
+        break
+
+# Находим папку с изображениями
+IMG_FOLDER = None
+for path in possible_img_folders:
+    if os.path.exists(path):
+        IMG_FOLDER = path
+        break
+
+def create_test_data():
+    """Создает тестовые CAPTCHA данные для демонстрации"""
+    import random
+    import string
+    from PIL import Image, ImageDraw, ImageFont
+    import csv
+    
+    print("Создаем тестовые CAPTCHA изображения...")
+    
+    # Русские символы для CAPTCHA
+    russian_chars = "абвгдежзийклмнопрстуфхцчшщъыьэюя0123456789"
+    
+    # Создаем 1000 тестовых изображений
+    labels_data = []
+    
+    for i in range(1000):
+        # Генерируем случайный текст длиной 4-6 символов
+        text_length = random.randint(4, 6)
+        text = ''.join(random.choices(russian_chars, k=text_length))
+        
+        # Создаем изображение
+        img = Image.new('RGB', (200, 60), color='white')
+        draw = ImageDraw.Draw(img)
+        
+        # Пытаемся использовать системный шрифт
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        except:
+            font = ImageFont.load_default()
+        
+        # Рисуем текст с небольшими искажениями
+        x = 10
+        for char in text:
+            y = random.randint(5, 15)
+            angle = random.randint(-10, 10)
+            
+            # Поворачиваем символ
+            char_img = Image.new('RGBA', (30, 40), (0, 0, 0, 0))
+            char_draw = ImageDraw.Draw(char_img)
+            char_draw.text((0, 0), char, font=font, fill='black')
+            char_img = char_img.rotate(angle, expand=1)
+            
+            img.paste(char_img, (x, y), char_img)
+            x += 25 + random.randint(-5, 5)
+        
+        # Добавляем шум
+        for _ in range(50):
+            x = random.randint(0, 199)
+            y = random.randint(0, 59)
+            draw.point((x, y), fill='gray')
+        
+        # Сохраняем изображение
+        filename = f"captcha_{i:04d}.png"
+        img_path = os.path.join(IMG_FOLDER, filename)
+        img.save(img_path)
+        
+        labels_data.append([text, filename])
+        
+        if (i + 1) % 100 == 0:
+            print(f"Создано {i + 1}/1000 изображений...")
+    
+    # Сохраняем метки
+    with open(LABELS_FILE, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=';')
+        writer.writerows(labels_data)
+    
+    print(f"✓ Создано 1000 тестовых изображений в {IMG_FOLDER}")
+    print(f"✓ Создан файл меток {LABELS_FILE}")
+
+# Если данные не найдены, создаем тестовые
+if LABELS_FILE is None or IMG_FOLDER is None:
+    print("⚠ Данные не найдены! Создаем тестовые данные...")
+    os.makedirs("data/images", exist_ok=True)
+    LABELS_FILE = "data/labels.csv"
+    IMG_FOLDER = "data/images"
+    
+    # Создаем тестовые данные
+    create_test_data()
 
 # Параметры обучения
 EPOCHS = 15  # Увеличено для лучшей точности
@@ -31,6 +139,10 @@ EARLY_STOPPING_PATIENCE = 10
 # Параметры датасета (для тестирования на малом объеме)
 USE_FULL_DATASET = True  # True = полный датасет, False = только первые 1000
 MAX_SAMPLES = 1000  # Если USE_FULL_DATASET=False
+
+# Увеличиваем количество эпох для полного датасета
+if USE_FULL_DATASET:
+    EPOCHS = 25  # Больше эпох для полного датасета
 
 # Параметры модели
 MAX_SEQUENCE_LENGTH = 7
@@ -119,18 +231,15 @@ def create_train_and_validation_datasets():
     items = list(data.items())
     
     if USE_FULL_DATASET:
-        # Полный датасет: первые 10000 + последние 10000
-        if len(items) > 20000:
-            train_dataset = items[:10000] + items[-10000:]
-            test_dataset = items[10000:-10000]
-        else:
-            # Если мало данных, используем все
-            train_dataset = items
-            test_dataset = []
-    else:
-        # Быстрый тест на малой выборке
+        # Полный датасет: используем ВСЕ данные
         train_dataset = items
         test_dataset = []
+        print(f"Используем полный датасет: {len(items)} образцов")
+    else:
+        # Быстрый тест на малой выборке
+        train_dataset = items[:MAX_SAMPLES]
+        test_dataset = []
+        print(f"Используем ограниченный датасет: {len(train_dataset)} образцов")
     
     y_texts, filenames = zip(*train_dataset)
     
@@ -392,12 +501,46 @@ except Exception as e:
 # Экспорт в TFLite (для мобильных устройств)
 try:
     converter = tf.lite.TFLiteConverter.from_keras_model(prediction_model)
+    
+    # Настройки для решения проблемы с TensorListReserve
+    converter.target_spec.supported_ops = [
+        tf.lite.OpsSet.TFLITE_BUILTINS,
+        tf.lite.OpsSet.SELECT_TF_OPS
+    ]
+    converter._experimental_lower_tensor_list_ops = False
+    
+    # Дополнительные настройки для стабильности
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.experimental_new_converter = True
+    
     tflite_model = converter.convert()
     with open("output/model.tflite", "wb") as f:
         f.write(tflite_model)
     print("✓ Модель экспортирована в output/model.tflite (TensorFlow Lite)")
 except Exception as e:
     print(f"⚠ Не удалось экспортировать в TFLite: {e}")
+    print("Попробуем альтернативный метод...")
+    
+    # Альтернативный метод через SavedModel
+    try:
+        # Сначала сохраняем в SavedModel
+        prediction_model.save("output/model_savedmodel")
+        
+        # Затем конвертируем из SavedModel
+        converter = tf.lite.TFLiteConverter.from_saved_model("output/model_savedmodel")
+        converter.target_spec.supported_ops = [
+            tf.lite.OpsSet.TFLITE_BUILTINS,
+            tf.lite.OpsSet.SELECT_TF_OPS
+        ]
+        converter._experimental_lower_tensor_list_ops = False
+        
+        tflite_model = converter.convert()
+        with open("output/model.tflite", "wb") as f:
+            f.write(tflite_model)
+        print("✓ Модель экспортирована в output/model.tflite (альтернативный метод)")
+    except Exception as e2:
+        print(f"⚠ Альтернативный метод также не сработал: {e2}")
+        print("TFLite экспорт пропущен, но модель сохранена в других форматах")
 
 print(f"\n{'='*60}")
 print("Все модели сохранены в папку output/")

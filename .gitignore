@@ -25,6 +25,10 @@ output/
 logs/
 *.log
 
+# Тестовые данные
+data/images/
+data/labels.csv
+
 # Kaggle
 input/
 *.csv
