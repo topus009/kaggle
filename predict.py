@@ -32,13 +32,46 @@ def load_model(model_path="output/model.keras"):
 
 def load_char_mappings():
     """Загружает словари символов"""
-    # Создаем словари символов (должны совпадать с обучением)
-    characters = sorted(set('абвгдежзийклмнопрстуфхцчшщъыьэюя0123456789'))
+    # Пытаемся определить алфавит из данных обучения
+    characters = None
+    
+    # Проверяем, есть ли файл с метками
+    possible_labels = [
+        "data/labels.csv",
+        "labels.csv", 
+        "input/labels.csv"
+    ]
+    
+    for labels_file in possible_labels:
+        if os.path.exists(labels_file):
+            try:
+                print(f"🔍 Определяем алфавит из {labels_file}...")
+                with open(labels_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                # Извлекаем все символы из данных
+                all_chars = set()
+                for line in lines:
+                    text = line.split(';')[0].strip()
+                    all_chars.update(text)
+                
+                characters = sorted(all_chars)
+                print(f"✅ Алфавит определен из данных: {len(characters)} символов")
+                break
+            except Exception as e:
+                print(f"⚠️ Ошибка чтения {labels_file}: {e}")
+                continue
+    
+    # Если не удалось определить из данных, используем полный алфавит
+    if characters is None:
+        print("⚠️ Не удалось определить алфавит из данных, используем полный набор")
+        characters = sorted(set('абвгдежзийклмнопрстуфхцчшщъыьэюя0123456789'))
+    
     char_to_num = {v: i for i, v in enumerate(characters)}
     num_to_char = {str(i): v for i, v in enumerate(characters)}
     num_to_char['-1'] = 'UKN'  # Для CTC декодирования
     
-    print(f"Алфавит ({len(characters)} символов): {characters}")
+    print(f"📝 Алфавит ({len(characters)} символов): {characters}")
     return char_to_num, num_to_char
 
 def preprocess_image(image_path, img_width=IMG_WIDTH, img_height=IMG_HEIGHT):
