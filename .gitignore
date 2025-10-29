@@ -24,8 +24,10 @@ models/
 output/
 logs/
 *.log
+results/
 
 # Тестовые данные
+images/images/
 data/images/
 data/labels.csv
 
