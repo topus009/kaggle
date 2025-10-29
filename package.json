@@ -1,0 +1,28 @@
+{
+  "name": "captcha-ocr-bot",
+  "version": "1.0.0",
+  "description": "CAPTCHA OCR Bot with Puppeteer and Flask API",
+  "main": "captcha_solver.js",
+  "scripts": {
+    "start": "node captcha_solver.js",
+    "test": "node captcha_client_nodejs.js health --url http://localhost:5000",
+    "predict": "node captcha_client_nodejs.js predict",
+    "batch": "node captcha_client_nodejs.js batch"
+  },
+  "keywords": [
+    "captcha",
+    "ocr",
+    "puppeteer",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
