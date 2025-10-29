@@ -25,6 +25,8 @@ output/
 logs/
 *.log
 results/
+test_captchas/
+real_results/
 
 # Тестовые данные
 images/images/
